@@ -8,12 +8,7 @@ from keras.optimizers import Adam
 import cv2 as cv
 import json
 
-EPISODES = 1000
-MAX_FRAMES = 10 ** 7
-IMAGE_SEQUENCE_SIZE = 4
 SCORES = []
-METRIC_STATES = []
-path = "save/"
 
 
 def preprocess_image(img):
@@ -28,6 +23,9 @@ class DQNAgent:
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=10 ** 6)
+        self.training_frames = 10 ** 7
+        self.image_sequence_size = 4
+        self.save_path = "save/"
         self.gamma = 0.95  # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.1
@@ -70,18 +68,18 @@ class DQNAgent:
             self.epsilon -= self.epsilon_decay
 
     def load(self):
-        with open(path + 'model_in_json.json', 'r') as f:
+        with open(self.save_path + 'model_in_json.json', 'r') as f:
             model_json = json.load(f)
 
         self.model = model_from_json(model_json)
-        self.model.load_weights(path + 'model_weights.h5')
+        self.model.load_weights(self.save_path + 'model_weights.h5')
         self.model.compile(loss='mse', optimizer='rmsprop')
 
     def save(self):
         model_json = self.model.to_json()
-        with open(path + "model_in_json.json", "w") as json_file:
+        with open(self.save_path + "model_in_json.json", "w") as json_file:
             json.dump(model_json, json_file)
-        self.model.save_weights(path + "model_weights.h5")
+        self.model.save_weights(self.save_path + "model_weights.h5")
         # self.model.save(path + "model.h5")
 
 
@@ -100,14 +98,16 @@ if __name__ == "__main__":
     timesteps = 0
     image_sequence = []
 
-    for e in range(EPISODES):
-        if timesteps >= MAX_FRAMES:
+    i_episode = 0
+
+    while True:
+        if timesteps >= agent.training_frames:
             break
         score = 0
         state = preprocess_image(env.reset())
         state = np.reshape(state, [1, 1] + state_size)
         action = None
-        for time in range(MAX_FRAMES):
+        for time in range(agent.training_frames):
             timesteps += 1
             # env.render()
             action = agent.act(state)
@@ -116,7 +116,7 @@ if __name__ == "__main__":
             reward = reward if not done else -10
             next_state = preprocess_image(next_state)
             image_sequence.append(next_state)
-            if len(image_sequence) > IMAGE_SEQUENCE_SIZE:
+            if len(image_sequence) > agent.image_sequence_size:
                 image_sequence.pop(0)
                 current_state = np.stack([image_sequence[0], image_sequence[1], image_sequence[2], image_sequence[3]])
             next_state = np.reshape(next_state, [1, 1] + state_size)
@@ -124,12 +124,13 @@ if __name__ == "__main__":
             state = next_state
             if done:
                 print("episode: {}, total timesteps: {}, score: {}, e: {:.2}"
-                      .format(e, timesteps, score, agent.epsilon))
+                      .format(i_episode, timesteps, score, agent.epsilon))
                 SCORES.append(score)
 
                 break
             if len(agent.memory) > batch_size:
                 agent.replay(batch_size)
-        if e % 10 == 0:
+        if i_episode % 10 == 0:
             agent.save()
+        i_episode += 1
     agent.save()
