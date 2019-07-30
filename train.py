@@ -8,8 +8,6 @@ from keras.optimizers import Adam
 import cv2 as cv
 import json
 
-SCORES = []
-
 
 def preprocess_image(img):
     img = np.dot(img[..., :3], [0.299, 0.587, 0.114])
@@ -31,7 +29,10 @@ class DQNAgent:
         self.epsilon_min = 0.1
         self.epsilon_decay = (self.epsilon - self.epsilon_min) / 10 ** 6
         self.learning_rate = 0.00025
-        self.model = self._build_model()
+        try:
+            self.load()
+        except FileNotFoundError:
+            self.model = self._build_model()
 
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
@@ -89,15 +90,9 @@ if __name__ == "__main__":
     state_size = [84, 84]
     action_size = env.action_space.n
     agent = DQNAgent(state_size, action_size)
-
-    del agent.model
-    agent.load()
-
     done = False
     batch_size = 32
     timesteps = 0
-    image_sequence = []
-
     i_episode = 0
 
     while True:
@@ -115,17 +110,12 @@ if __name__ == "__main__":
             score += reward
             reward = reward if not done else -10
             next_state = preprocess_image(next_state)
-            image_sequence.append(next_state)
-            if len(image_sequence) > agent.image_sequence_size:
-                image_sequence.pop(0)
-                current_state = np.stack([image_sequence[0], image_sequence[1], image_sequence[2], image_sequence[3]])
             next_state = np.reshape(next_state, [1, 1] + state_size)
             agent.remember(state, action, reward, next_state, done)
             state = next_state
             if done:
                 print("episode: {}, total timesteps: {}, score: {}, e: {:.2}"
                       .format(i_episode, timesteps, score, agent.epsilon))
-                SCORES.append(score)
 
                 break
             if len(agent.memory) > batch_size:
