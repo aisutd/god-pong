@@ -83,7 +83,7 @@ class DQNAgent:
 
     def save(self):
         model_json = self.model.to_json()
-        with open(self.save_path + "model_in_json.json", "w") as json_file:
+        with open(self.save_path + "model_in_json.json", "w+") as json_file:
             json.dump(model_json, json_file)
         self.model.save_weights(self.save_path + "model_weights.h5")
         # self.model.save(path + "model.h5")
