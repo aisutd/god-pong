@@ -29,7 +29,7 @@ class DQNAgent:
         self.gamma = 0.95  # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.1
-        self.epsilon_decay = (self.epsilon - self.epsilon_min) / 10 ** 5
+        self.epsilon_decay = (self.epsilon - self.epsilon_min) / 10 ** 4
         self.learning_rate = 0.00025
         try:
             self.load()
@@ -90,7 +90,7 @@ class DQNAgent:
 
 
 if __name__ == "__main__":
-    env = gym.make('BreakoutNoFrameskip-v4')
+    env = gym.make('BreakoutDeterministic-v4')
     observation = preprocess_image(env.reset())
     state_size = (84, 84, 4)
     action_size = env.action_space.n
@@ -121,8 +121,7 @@ if __name__ == "__main__":
                                           agent.image_sequence[1],
                                           agent.image_sequence[2],
                                           agent.image_sequence[3]])
-                if time % 4 == 0:
-                    action = agent.act(current_state)
+                action = agent.act(current_state)
                 next_observation, reward, done, _ = env.step(action)
                 score += reward
                 reward = reward if not done else -10
