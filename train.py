@@ -20,8 +20,8 @@ class DQNAgent:
     def __init__(self, state_size, action_size):
         self.state_size = state_size
         self.action_size = action_size
-        self.memory = deque(maxlen=10 ** 6)
-        self.training_frames = 10 ** 7
+        self.memory = deque(maxlen=10 ** 5)
+        self.training_frames = 10 ** 6
         self.image_sequence_size = 4
         self.frameskip = 4
         self.image_sequence = deque(maxlen=4)
@@ -29,7 +29,7 @@ class DQNAgent:
         self.gamma = 0.95  # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.1
-        self.epsilon_decay = (self.epsilon - self.epsilon_min) / 10 ** 6
+        self.epsilon_decay = (self.epsilon - self.epsilon_min) / 10 ** 5
         self.learning_rate = 0.00025
         try:
             self.load()
