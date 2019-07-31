@@ -27,7 +27,7 @@ class DQNAgent:
         self.image_sequence = deque(maxlen=4)
         self.save_path = "save/"
         self.gamma = 0.95  # discount rate
-        self.epsilon = 0  # exploration rate
+        self.epsilon = 0.0  # exploration rate
         self.epsilon_min = 0.1
         self.epsilon_decay = (self.epsilon - self.epsilon_min) / 10 ** 6
         self.learning_rate = 0.00025
@@ -137,9 +137,9 @@ if __name__ == "__main__":
 
             observation = next_observation
             if done:
-                    print("episode: {}, total timesteps: {}, score: {}, e: {:.2}"
-                        .format(i_episode, timesteps, score, agent.epsilon))
-                    break
+                print("episode: {}, total timesteps: {}, score: {}, e: {:.2}"
+                    .format(i_episode, timesteps, score, agent.epsilon))
+                break
 
         if i_episode % 10 == 0:
             agent.save()
