@@ -104,8 +104,8 @@ if __name__ == "__main__":
         if timesteps >= agent.training_frames:
             break
         score = 0
-        observation = env.reset()
-        agent.image_sequence.extend([observation, observation, observation, observation])
+        observation = preprocess_image(env.reset())
+        agent.image_sequence.extend([observation] * 4)
         for time in range(agent.training_frames):
             timesteps += 1
             # env.render()
@@ -117,7 +117,6 @@ if __name__ == "__main__":
             if len(agent.image_sequence) < agent.image_sequence_size:
                 next_observation, reward, done, _ = env.step(action)
             else:
-                print(agent.image_sequence)
                 current_state = np.stack([agent.image_sequence[0],
                                           agent.image_sequence[1],
                                           agent.image_sequence[2],
