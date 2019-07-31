@@ -105,7 +105,7 @@ if __name__ == "__main__":
             break
         score = 0
         observation = env.reset()
-        agent.image_sequence.extend([observation] * 4)
+        agent.image_sequence.extend([observation, observation, observation, observation])
         for time in range(agent.training_frames):
             timesteps += 1
             # env.render()
