@@ -39,8 +39,8 @@ class DQNAgent:
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Conv2D(filters=16, kernel_size=(8, 8), strides=4, data_format='channels_last', activation='relu'))
-        model.add(Conv2D(filters=32, kernel_size=(4, 4), strides=2, data_format='channels_last', activation='relu'))
+        model.add(Conv2D(filters=16, kernel_size=(8, 8), strides=4, data_format='channels_last', activation='relu', input_shape=self.state_size))
+        model.add(Conv2D(filters=32, kernel_size=(4, 4), strides=2, data_format='channels_last', activation='relu', input_shape=self.state_size))
         model.add(Flatten())
         model.add(Dense(units=256, activation='relu'))
         model.add(Dense(units=self.action_size, activation='linear'))
@@ -92,7 +92,7 @@ class DQNAgent:
 if __name__ == "__main__":
     env = gym.make('BreakoutNoFrameskip-v4')
     observation = preprocess_image(env.reset())
-    state_size = [84, 84]
+    state_size = (84, 84, 4)
     action_size = env.action_space.n
     agent = DQNAgent(state_size, action_size)
     done = False
@@ -105,7 +105,7 @@ if __name__ == "__main__":
             break
         score = 0
         observation = env.reset()
-
+        agent.image_sequence.extend([observation] * 4)
         for time in range(agent.training_frames):
             timesteps += 1
             # env.render()
