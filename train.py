@@ -20,7 +20,7 @@ class DQNAgent:
     def __init__(self, state_size, action_size):
         self.state_size = state_size
         self.action_size = action_size
-        self.memory = deque(maxlen=10 ** 5)
+        self.memory = deque(maxlen=10 ** 4)
         self.training_frames = 10 ** 6
         self.image_sequence_size = 4
         self.frameskip = 4
