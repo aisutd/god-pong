@@ -117,6 +117,7 @@ if __name__ == "__main__":
             if len(agent.image_sequence) < agent.image_sequence_size:
                 next_observation, reward, done, _ = env.step(action)
             else:
+                print(agent.image_sequence)
                 current_state = np.stack([agent.image_sequence[0],
                                           agent.image_sequence[1],
                                           agent.image_sequence[2],
