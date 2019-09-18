@@ -3,7 +3,7 @@ import gym
 import numpy as np
 from collections import deque
 from keras.models import Sequential, load_model, model_from_json
-from keras.layers import Dense, Conv2D, Flatten
+from keras.layers import Dense, Conv2D, Flatten, Reshape
 from keras.optimizers import Adam
 import cv2 as cv
 import json
@@ -21,7 +21,7 @@ class DQNAgent:
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=10 ** 4)
-        self.training_frames = 10 ** 6
+        self.training_frames = 10 ** 7
         self.image_sequence_size = 4
         self.frameskip = 4
         self.image_sequence = deque(maxlen=4)
@@ -29,7 +29,7 @@ class DQNAgent:
         self.gamma = 0.95  # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.1
-        self.epsilon_decay = (self.epsilon - self.epsilon_min) / 10 ** 4
+        self.epsilon_decay = (self.epsilon - self.epsilon_min) / 10 ** 5
         self.learning_rate = 0.00025
         try:
             self.load()
@@ -37,11 +37,11 @@ class DQNAgent:
             self.model = self._build_model()
 
     def _build_model(self):
-        # Neural Net for Deep-Q learning Model
         model = Sequential()
         model.add(Conv2D(filters=16, kernel_size=(8, 8), strides=4, data_format='channels_last', activation='relu', input_shape=self.state_size))
         model.add(Conv2D(filters=32, kernel_size=(4, 4), strides=2, data_format='channels_last', activation='relu', input_shape=self.state_size))
-        model.add(Flatten())
+        #model.add(Flatten())
+        model.add(Reshape(-1,2592))
         model.add(Dense(units=256, activation='relu'))
         model.add(Dense(units=self.action_size, activation='linear'))
         model.compile(loss='mse',
@@ -68,7 +68,7 @@ class DQNAgent:
                 target = (reward + self.gamma *
                           np.amax(self.model.predict(i_next_state)[0]))
             target_f = self.model.predict(i_state)
-            target_f[0][action] = target
+            target_f[0][0][action] = target
             self.model.fit(i_state, target_f, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
             self.epsilon -= self.epsilon_decay
