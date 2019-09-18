@@ -41,7 +41,7 @@ class DQNAgent:
         model.add(Conv2D(filters=16, kernel_size=(8, 8), strides=4, data_format='channels_last', activation='relu', input_shape=self.state_size))
         model.add(Conv2D(filters=32, kernel_size=(4, 4), strides=2, data_format='channels_last', activation='relu', input_shape=self.state_size))
         #model.add(Flatten())
-        model.add(Reshape(-1,2592))
+        model.add(Reshape((-1,2592)))
         model.add(Dense(units=256, activation='relu'))
         model.add(Dense(units=self.action_size, activation='linear'))
         model.compile(loss='mse',
