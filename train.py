@@ -5,15 +5,8 @@ from collections import deque
 from keras.models import Sequential, load_model, model_from_json
 from keras.layers import Dense, Conv2D, Flatten, Reshape
 from keras.optimizers import Adam
-import cv2 as cv
 import json
 
-
-def preprocess_image(img):
-    img = np.dot(img[..., :3], [0.299, 0.587, 0.114])
-    img = cv.resize(img, dsize=(84, 110), interpolation=cv.INTER_AREA)
-    img = img[16:100]
-    return img
 
 
 class DQNAgent:
@@ -22,15 +15,12 @@ class DQNAgent:
         self.action_size = action_size
         self.memory = deque(maxlen=10 ** 4)
         self.training_frames = 10 ** 7
-        self.image_sequence_size = 4
-        self.frameskip = 4
-        self.image_sequence = deque(maxlen=4)
-        self.save_path = "save/"
+        self.save_path = "./save/"
         self.gamma = 0.95  # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.1
-        self.epsilon_decay = (self.epsilon - self.epsilon_min) / 10 ** 5
-        self.learning_rate = 0.00025
+        self.epsilon_decay = 10 ** -5
+        self.learning_rate = 0.001
         try:
             self.load()
         except FileNotFoundError:
@@ -38,21 +28,17 @@ class DQNAgent:
 
     def _build_model(self):
         model = Sequential()
-        model.add(Conv2D(filters=16, kernel_size=(8, 8), strides=4, data_format='channels_last', activation='relu', input_shape=self.state_size))
-        model.add(Conv2D(filters=32, kernel_size=(4, 4), strides=2, data_format='channels_last', activation='relu', input_shape=self.state_size))
-        #model.add(Flatten())
-        model.add(Reshape((-1,2592)))
-        model.add(Dense(units=256, activation='relu'))
-        model.add(Dense(units=self.action_size, activation='linear'))
+        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(24, activation='relu'))
+        model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse',
-                      optimizer='rmsprop')
+                      optimizer=Adam(lr=self.learning_rate))
         return model
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state):
-        state = np.reshape(state, (-1, 84, 84, 4))
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         act_values = self.model.predict(state)
@@ -61,14 +47,12 @@ class DQNAgent:
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
         for i_state, action, reward, i_next_state, done in minibatch:
-            i_state = np.reshape(i_state, (-1, 84, 84, 4))
-            i_next_state = np.reshape(i_state, (-1, 84, 84, 4))
             target = reward
             if not done:
                 target = (reward + self.gamma *
                           np.amax(self.model.predict(i_next_state)[0]))
             target_f = self.model.predict(i_state)
-            target_f[0][0][action] = target
+            target_f[0][action] = target
             self.model.fit(i_state, target_f, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
             self.epsilon -= self.epsilon_decay
@@ -79,7 +63,7 @@ class DQNAgent:
 
         self.model = model_from_json(model_json)
         self.model.load_weights(self.save_path + 'model_weights.h5')
-        self.model.compile(loss='mse', optimizer='rmsprop')
+        self.model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
 
     def save(self):
         model_json = self.model.to_json()
@@ -90,9 +74,8 @@ class DQNAgent:
 
 
 if __name__ == "__main__":
-    env = gym.make('BreakoutDeterministic-v4')
-    observation = preprocess_image(env.reset())
-    state_size = (84, 84, 4)
+    env = gym.make('Pong-ram-v0')
+    state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
     agent = DQNAgent(state_size, action_size)
     done = False
@@ -104,37 +87,19 @@ if __name__ == "__main__":
         if timesteps >= agent.training_frames:
             break
         score = 0
-        observation = preprocess_image(env.reset())
-        agent.image_sequence.extend([observation] * 4)
+        current_state = env.reset()
+        current_state = np.reshape(current_state, [1, state_size])
         for time in range(agent.training_frames):
             timesteps += 1
             # env.render()
-            p_image = preprocess_image(observation)
-            agent.image_sequence.append(p_image)
-
-            action = 0
-
-            if len(agent.image_sequence) < agent.image_sequence_size:
-                next_observation, reward, done, _ = env.step(action)
-            else:
-                current_state = np.stack([agent.image_sequence[0],
-                                          agent.image_sequence[1],
-                                          agent.image_sequence[2],
-                                          agent.image_sequence[3]])
-                action = agent.act(current_state)
-                next_observation, reward, done, _ = env.step(action)
-                score += reward
-                reward = reward if not done else -10
-                p_image = preprocess_image(next_observation)
-                next_state = np.stack([agent.image_sequence[0],
-                                       agent.image_sequence[1],
-                                       agent.image_sequence[2],
-                                       p_image])
-                agent.remember(current_state, action, reward, next_state, done)
-                if len(agent.memory) > batch_size:
-                    agent.replay(batch_size)
-
-            observation = next_observation
+            action = agent.act(current_state)
+            next_state, reward, done, _ = env.step(action)
+            score += reward
+            next_state = np.reshape(next_state, [1, state_size])
+            agent.remember(current_state, action, reward, next_state, done)
+            current_state = next_state
+            if len(agent.memory) > batch_size:
+                agent.replay(batch_size)
             if done:
                 print("episode: {}, total timesteps: {}, score: {}, e: {:.2}"
                     .format(i_episode, timesteps, score, agent.epsilon))
